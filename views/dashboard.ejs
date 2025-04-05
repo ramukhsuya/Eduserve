@@ -1,2 +1,37 @@
 <%- include('partials/header') %>
+<div class="container my-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card-welcome shadow">
+                <div class="card-header bg-primary text-white">
+                    <h3>Welcome to your Dashboard</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h4>Hello, <%= user.fullName %>!</h4>
+                            <p>Email: <%= user.email %></p>
+                            <% if (user.createdAt) { %>
+                                <p>Account created: <%= new Date(user.createdAt).toLocaleDateString() %></p>
+                            <% } else { %>
+                                <p>Account creation date not available.</p>
+                            <% } %>
+                        </div>
+                        <!-- Action Buttons -->
+                        <div class="col-md-4 text-end">
+                            <!-- Add Marks Button -->
+                            <a href="/marks/add" class="btn btn-success btn-lg mb-2 w-100">
+                                <i class="bi bi-plus-circle"></i> Add Marks
+                            </a>
+                            <!-- View Educational History Button -->
+                            <a href="/marks" class="btn btn-primary btn-lg w-100">
+                                <i class="bi bi-list-ul"></i> View Educational History
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 <%- include('partials/footer') %>

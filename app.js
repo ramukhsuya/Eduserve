@@ -5,7 +5,9 @@ const bodyParser = require('body-parser');
 const app = express();
 const session = require('express-session');
 const authRoutes = require('./routes/auth');
+const passport = require('passport'); // Add this line
 
+require('dotenv').config();
 // MongoDB connection setup
 const dbUrl = 'mongodb://localhost:27017/EDUCATION'; 
 mongoose.connect(dbUrl)
@@ -29,6 +31,10 @@ app.use((req, res, next) => {
     res.locals.user = req.session.user || null; // Set 'user' from session or null if not logged in
     next();
 });
+
+// Initialize Passport after session middleware
+app.use(passport.initialize());
+app.use(passport.session());
 
 // Set EJS as the template engine
 app.set('view engine', 'ejs');

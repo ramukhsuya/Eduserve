@@ -5,11 +5,10 @@ const User = require('../models/User'); // Import User model
 require('dotenv').config(); // Load environment variables
 
 const router = express.Router();
-
 // Configure Passport with Google OAuth Strategy
 passport.use(new GoogleStrategy({
-    clientID: process.env.GOOGLE_CLIENT_ID,
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    clientID: process.env.CLIENT_ID,
+    clientSecret: process.env.CLIENT_SECRET,
     callbackURL: "http://localhost:3000/auth/google/callback"
 }, async (accessToken, refreshToken, profile, done) => {
     try {
@@ -48,15 +47,13 @@ router.get('/auth/google', passport.authenticate('google', { scope: ['profile', 
 router.get('/auth/google/callback',
     passport.authenticate('google', { failureRedirect: '/login' }),
     (req, res) => {
-        // Save user info in session after successful login
         req.session.user = {
             id: req.user._id,
             fullName: req.user.fullName,
             email: req.user.email,
+            createdAt: req.user.createdAt // Add this line
         };
-
-        console.log(`User ${req.user.fullName} logged in via Google successfully!`);
-        res.redirect('/dashboard'); // Redirect to dashboard
+        res.redirect('/dashboard');
     }
 );
 
