@@ -1,0 +1,45 @@
+<%- include('partials/header') %>
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-8 mx-auto">
+      <div class="card shadow">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+          <h3 class="mb-0">Note Details</h3>
+          <a href="/notes" class="btn btn-light btn-sm">Back to Notes</a>
+        </div>
+        <div class="card-body">
+          <h4><%= note.title %></h4>
+          <div class="text-muted mb-3">
+            <span class="me-3"><%= note.subject %></span>
+            <span class="badge bg-primary"><%= note.type %></span>
+          </div>
+
+          <div class="mb-4">
+            <% note.tags.forEach(tag => { %>
+              <span class="badge bg-secondary me-1"><%= tag %></span>
+            <% }) %>
+          </div>
+
+          <div class="border-top pt-3">
+            <h5>Content</h5>
+            <div class="note-content" style="white-space: pre-wrap;"><%= note.content %></div>
+          </div>
+        </div>
+        <div class="card-footer">
+          <form action="/notes/<%= note._id %>/delete" method="POST" class="d-inline">
+            <button type="submit" class="btn btn-danger" 
+                    onclick="return confirm('Delete this note permanently?')">
+              <i class="bi bi-trash"></i> Delete Note
+            </button>
+          </form>
+          <a href="/notes/<%= note._id %>/edit" class="btn btn-primary ms-2">
+            <i class="bi bi-pencil"></i> Edit Note
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

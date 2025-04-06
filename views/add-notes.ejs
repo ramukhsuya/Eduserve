@@ -1,0 +1,63 @@
+<%- include('partials/header') %>
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-8 mx-auto">
+      <div class="card shadow">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+          <h3 class="mb-0">Add New Study Note</h3>
+          <a href="/notes" class="btn btn-light btn-sm">Back to Notes</a>
+        </div>
+        <div class="card-body">
+          <% if (typeof error !== 'undefined' && error) { %>
+            <div class="alert alert-danger"><%= error %></div>
+          <% } %>
+
+          <form action="/notes/add" method="POST">
+            <div class="mb-3">
+              <label class="form-label">Title</label>
+              <input type="text" class="form-control" name="title" 
+                     value="<%= typeof values !== 'undefined' ? values.title : '' %>" required>
+            </div>
+
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label class="form-label">Subject</label>
+                <input type="text" class="form-control" name="subject" 
+                       value="<%= typeof values !== 'undefined' ? values.subject : '' %>" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Note Type</label>
+                <select class="form-select" name="type" required>
+                  <option value="Lecture" <%= (typeof values !== 'undefined' && values.type === 'Lecture') ? 'selected' : '' %>>Lecture</option>
+                  <option value="Lab" <%= (typeof values !== 'undefined' && values.type === 'Lab') ? 'selected' : '' %>>Lab</option>
+                  <option value="Research" <%= (typeof values !== 'undefined' && values.type === 'Research') ? 'selected' : '' %>>Research</option>
+                  <option value="Other" <%= (typeof values !== 'undefined' && values.type === 'Other') ? 'selected' : '' %>>Other</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Content</label>
+              <textarea class="form-control" name="content" rows="8" required><%= typeof values !== 'undefined' ? values.content : '' %></textarea>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Tags (comma separated)</label>
+              <input type="text" class="form-control" name="tags" 
+                     value="<%= typeof values !== 'undefined' ? values.tags : '' %>">
+              <div class="form-text">E.g., "formulas, chapter-3, important"</div>
+            </div>
+
+            <div class="d-grid gap-2">
+              <button type="submit" class="btn btn-primary">Save Note</button>
+              <a href="/notes" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

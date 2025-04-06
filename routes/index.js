@@ -5,7 +5,7 @@ const bcryptjs = require('bcryptjs'); // For password comparison
 const Mark = require('../models/Mark'); // Add this line
 const Goal = require('../models/Goal'); // Import the Goal model
 const Reminder = require('../models/Reminder'); // Import the Reminder model
-
+const Note = require('../models/Note');
 // Middleware to ensure authentication for protected routes
 function ensureAuthenticated(req, res, next) {
     if (req.session && req.session.user) {
@@ -497,5 +497,158 @@ router.get('/reminders', ensureAuthenticated, async (req, res) => {
     }
 });
 
+router.get('/reminders/:id/edit', ensureAuthenticated, async (req, res) => {
+    try {
+        const reminder = await Reminder.findById(req.params.id);
+
+        if (!reminder) {
+            return res.status(404).render('reminders', {
+                error: 'Reminder not found',
+                success: null,
+                overdueReminders: [],
+                upcomingReminders: [],
+                completedReminders: []
+            });
+        }
+
+        res.render('edit-reminder', { reminder, error: null });
+    } catch (error) {
+        console.error('Error fetching reminder for editing:', error);
+        res.status(500).render('reminders', {
+            error: 'Failed to load reminder for editing',
+            success: null,
+            overdueReminders: [],
+            upcomingReminders: [],
+            completedReminders: []
+        });
+    }
+});
+router.put('/reminders/:id', ensureAuthenticated, async (req, res) => {
+    try {
+        const { title, subject, category, dueDate, reminderDays, notes } = req.body;
+
+        const updatedReminder = await Reminder.findByIdAndUpdate(
+            req.params.id,
+            {
+                title,
+                subject,
+                category,
+                dueDate: new Date(dueDate),
+                reminderDays: parseInt(reminderDays),
+                notes
+            },
+            { new: true }
+        );
+
+        if (!updatedReminder) {
+            return res.status(404).render('reminders', {
+                error: 'Reminder not found',
+                success: null,
+                overdueReminders: [],
+                upcomingReminders: [],
+                completedReminders: []
+            });
+        }
+
+        res.redirect('/reminders');
+    } catch (error) {
+        console.error('Error updating reminder:', error);
+        res.status(500).render('edit-reminder', {
+            reminder: req.body,
+            error: 'Failed to update reminder',
+            success: null
+        });
+    }
+});
+router.post('/reminders/:id/delete', ensureAuthenticated, async (req, res) => {
+    try {
+        const deletedReminder = await Reminder.findByIdAndDelete(req.params.id);
+
+        if (!deletedReminder) {
+            return res.status(404).render('reminders', {
+                error: 'Reminder not found',
+                success: null,
+                overdueReminders: [],
+                upcomingReminders: [],
+                completedReminders: []
+            });
+        }
+
+        res.redirect('/reminders');
+    } catch (error) {
+        console.error('Error deleting reminder:', error);
+        res.status(500).render('reminders', {
+            error: 'Failed to delete reminder',
+            success: null,
+            overdueReminders: [],
+            upcomingReminders: [],
+            completedReminders: []
+        });
+    }
+});
+// Note routes
+// Add Note - GET
+router.get('/notes/add', ensureAuthenticated, (req, res) => {
+    res.render('add-notes', { error: null });
+});
+
+// Add Note - POST
+router.post('/notes/add', ensureAuthenticated, async (req, res) => {
+    try {
+        const { title, subject, type, content, tags } = req.body;
+        
+        const newNote = new Note({
+            title,
+            subject,
+            type,
+            content,
+            tags: tags.split(',').map(tag => tag.trim()),
+            userId: req.session.user.id
+        });
+
+        await newNote.save();
+        res.redirect('/notes');
+    } catch (error) {
+        console.error('Error saving note:', error);
+        res.render('add-notes', { 
+            error: 'Failed to save note. Please check all required fields.',
+            values: req.body
+        });
+    }
+});
+
+// View All Notes - GET
+router.get('/notes', ensureAuthenticated, async (req, res) => {
+    try {
+        const notes = await Note.find({ userId: req.session.user.id }).sort({ createdAt: -1 });
+        res.render('notes', { notes, error: null });
+    } catch (error) {
+        console.error('Error fetching notes:', error);
+        res.render('notes', { notes: [], error: 'Failed to load notes' });
+    }
+});
+
+// View Note Detail - GET
+router.get('/notes/:id', ensureAuthenticated, async (req, res) => {
+    try {
+        const note = await Note.findById(req.params.id);
+        if (!note) return res.status(404).redirect('/notes');
+        res.render('note-detail', { note });
+    } catch (error) {
+        console.error('Error fetching note:', error);
+        res.redirect('/notes');
+    }
+});
+
+// Delete Note - POST
+router.post('/notes/:id/delete', ensureAuthenticated, async (req, res) => {
+    try {
+        await Note.findByIdAndDelete(req.params.id);
+        res.redirect('/notes');
+    } catch (error) {
+        console.error('Error deleting note:', error);
+        res.redirect('/notes');
+    }
+});
 
 module.exports = router;
