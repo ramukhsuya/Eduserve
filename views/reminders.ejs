@@ -1,0 +1,148 @@
+<%- include('partials/header') %>
+<% 
+// Initialize variables using the EJS locals object
+const overdueReminders = typeof locals.overdueReminders !== 'undefined' ? locals.overdueReminders : [];
+const upcomingReminders = typeof locals.upcomingReminders !== 'undefined' ? locals.upcomingReminders : [];
+const completedReminders = typeof locals.completedReminders !== 'undefined' ? locals.completedReminders : [];
+%>
+
+<div class="container">
+  <div class="row mb-4">
+    <div class="col-md-12">
+      <div class="card-reminder shadow">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+          <h3 class="mb-0">Study Reminders</h3>
+          <a href="/reminders/add" class="btn btn-light">Add New Reminder</a>
+        </div>
+        <div class="card-body bg-white">
+          <% if (typeof success !== 'undefined' && success) { %>
+            <div class="alert alert-success" role="alert">
+              <%= success %>
+            </div>
+          <% } %>
+          
+          <% if (typeof error !== 'undefined' && error) { %>
+            <div class="alert alert-danger" role="alert">
+              <%= error %>
+            </div>
+          <% } %>
+
+          <!-- Summary Cards -->
+          <div class="row mb-4">
+            <div class="col-md-6 mb-2">
+              <div class="card text-white bg-danger h-100">
+                <div class="card-body text-center">
+                  <i class="bi bi-exclamation-triangle fs-1"></i>
+                  <h5 class="mt-2">Overdue</h5>
+                  <h2><%= overdueReminders.length %></h2>
+                </div>
+              </div>
+            </div>
+            
+            <div class="col-md-6 mb-2">
+              <div class="card text-white bg-warning h-100">
+                <div class="card-body text-center">
+                  <i class="bi bi-calendar-week fs-1"></i>
+                  <h5 class="mt-2">Upcoming</h5>
+                  <h2><%= upcomingReminders.length %></h2>
+                </div>
+              </div>
+            </div>
+            
+
+          <!-- Overdue Reminders -->
+          <% if (overdueReminders.length > 0) { %>
+            <div class="card mb-4 border-danger">
+              <div class="card-header bg-danger text-white">
+                <h5 class="mb-0">Overdue Reminders</h5>
+              </div>
+              <div class="card-body">
+                <div class="table-responsive">
+                  <table class="table table-hover">
+                    <thead>
+                      <tr>
+                        <th>Title</th>
+                        <th>Subject</th>
+                        <th>Due Date</th>
+                        <th>Days Overdue</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <% overdueReminders.forEach(reminder => { %>
+                        <tr>
+                          <td><%= reminder.title %></td>
+                          <td><%= reminder.subject %></td>
+                          <td><%= new Date(reminder.dueDate).toLocaleDateString() %></td>
+                          <td><span class="badge bg-danger"><%= Math.abs(reminder.daysUntilDue) %></span></td>
+                          <td>
+                            <a href="/reminders/<%= reminder._id %>/edit" class="btn btn-sm btn-outline-primary">Edit</a>
+                            <form action="/reminders/<%= reminder._id %>/delete" method="POST" style="display:inline;">
+                              <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this reminder?')">Delete</button>
+                            </form>
+                          </td>
+                        </tr>
+                      <% }); %>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          <% } %>
+
+          <!-- Upcoming Reminders -->
+          <% if (upcomingReminders.length > 0) { %>
+            <div class="card mb-4 border-warning">
+              <div class="card-header bg-warning text-white">
+                <h5 class="mb-0">Upcoming Reminders</h5>
+              </div>
+              <div class="card-body">
+                <div class="table-responsive">
+                  <table class="table table-hover">
+                    <thead>
+                      <tr>
+                        <th>Title</th>
+                        <th>Subject</th>
+                        <th>Due Date</th>
+                        <th>Days Left</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <% upcomingReminders.forEach(reminder => { %>
+                        <tr>
+                          <td><%= reminder.title %></td>
+                          <td><%= reminder.subject %></td>
+                          <td><%= new Date(reminder.dueDate).toLocaleDateString() %></td>
+                          <td><span class="badge bg-warning"><%= reminder.daysUntilDue %></span></td>
+                          <td>
+                            <a href="/reminders/<%= reminder._id %>/edit" class="btn btn-sm btn-outline-primary">Edit</a>
+                            <form action="/reminders/<%= reminder._id %>/delete" method="POST" style="display:inline;">
+                              <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this reminder?')">Delete</button>
+                            </form>
+                          </td>
+                        </tr>
+                      <% }); %>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          <% } %>
+
+          
+          <% if (reminders.length === 0) { %>
+            <div class="text-center py-5">
+              <i class="bi bi-bell fs-1 text-muted"></i>
+              <h4 class="mt-3">No reminders found</h4>
+              <p>Get started by adding your first study reminder!</p>
+              <a href="/reminders/add" class="btn btn-primary">Add Reminder</a>
+            </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

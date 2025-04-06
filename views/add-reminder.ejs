@@ -1,0 +1,111 @@
+<%- include('partials/header') %>
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-8 mx-auto">
+      <div class="card shadow">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+          <h3 class="mb-0">Add New Study Reminder</h3>
+          <a href="/reminders" class="btn btn-light btn-sm">Back to Reminders</a>
+        </div>
+        <div class="card-body">
+          <% if (typeof error !== 'undefined' && error && error.length > 0) { %>
+            <div class="alert alert-danger" role="alert">
+              <%= error %>
+            </div>
+          <% } %>
+          
+          <form action="/reminders/add" method="POST">
+            <!-- Reminder Title -->
+            <div class="mb-3">
+              <label for="title" class="form-label">Reminder Title</label>
+              <input type="text" class="form-control" id="title" name="title" required>
+              <div class="form-text">Enter a descriptive title for this reminder (e.g., "Math Assignment Due", "Physics Quiz").</div>
+            </div>
+
+            <!-- Subject -->
+            <div class="mb-3">
+              <label for="subject" class="form-label">Subject</label>
+              <input type="text" class="form-control" id="subject" name="subject" required>
+              <div class="form-text">Enter the subject or course this reminder is related to.</div>
+            </div>
+
+            <!-- Category -->
+            <div class="mb-3">
+              <label for="category" class="form-label">Category</label>
+              <select class="form-select" id="category" name="category" required>
+                <option value="">Select a category</option>
+                <option value="Assignment">Assignment</option>
+                <option value="Quiz/Test">Quiz/Test</option>
+                <option value="Project">Project</option>
+                <option value="Exam">Exam</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
+            <!-- Due Date -->
+            <div class="mb-3">
+              <label for="dueDate" class="form-label">Due Date</label>
+              <input type="date" class="form-control" id="dueDate" name="dueDate" required>
+            </div>
+
+            <!-- Recurring Type -->
+            <div class="mb-3">
+              <label for="recurringType" class="form-label">Recurring</label>
+              <select class="form-select" id="recurringType" name="recurringType">
+                <option value="">Not Recurring</option>
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+                <option value="yearly">Yearly</option>
+              </select>
+              <div class="form-text">For recurring reminders, a new reminder will be created automatically after the due date.</div>
+            </div>
+
+            <!-- Reminder Days -->
+            <div class="mb-3">
+              <label for="reminderDays" class="form-label">Remind Me Before Due Date</label>
+              <select class="form-select" id="reminderDays" name="reminderDays">
+                <option value="">No Reminder</option>
+                <option value="1">1 day before due date</option>
+                <option value="2">2 days before due date</option>
+                <option value="3" selected>3 days before due date</option>
+                <option value="5">5 days before due date</option>
+                <option value="7">7 days before due date</option>
+                <option value="14">14 days before due date</option>
+              </select>
+            </div>
+
+            <!-- Notes -->
+            <div class="mb-3">
+              <label for="notes" class="form-label">Notes (Optional)</label>
+              <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+              <div class="form-text">Add any additional details about this reminder.</div>
+            </div>
+
+            <!-- Buttons -->
+            <div class="d-grid gap-2">
+              <button type="submit" class="btn btn-primary">Add Reminder</button>
+              <a href="/reminders" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Set minimum date to today
+document.addEventListener('DOMContentLoaded', function() {
+  const dueDateInput = document.getElementById('dueDate');
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, '0');
+  const dd = String(today.getDate()).padStart(2, '0');
+  dueDateInput.min = `${yyyy}-${mm}-${dd}`;
+  dueDateInput.value = `${yyyy}-${mm}-${dd}`;
+});
+</script>
+
+<%- include('partials/footer') %> 

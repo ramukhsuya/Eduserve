@@ -4,6 +4,8 @@ const User = require('../models/User'); // Import User model
 const bcryptjs = require('bcryptjs'); // For password comparison
 const Mark = require('../models/Mark'); // Add this line
 const Goal = require('../models/Goal'); // Import the Goal model
+const Reminder = require('../models/Reminder'); // Import the Reminder model
+
 // Middleware to ensure authentication for protected routes
 function ensureAuthenticated(req, res, next) {
     if (req.session && req.session.user) {
@@ -417,6 +419,80 @@ router.put('/goals/:id', ensureAuthenticated, async (req, res) => {
         res.status(500).render('edit-goal', {
             error: 'Failed to update goal. Please check your inputs.',
             goal: req.body
+        });
+    }
+});
+
+// Add these routes
+router.get('/reminders/add', ensureAuthenticated, (req, res) => {
+    res.render('add-reminder');
+});
+
+router.post('/reminders/add', ensureAuthenticated, async (req, res) => {
+    try {
+        const { title, subject, category, dueDate, recurringType, reminderDays, notes } = req.body;
+
+        // Create a new reminder
+        const newReminder = new Reminder({
+            userId: req.session.user.id,
+            title,
+            subject,
+            category,
+            dueDate: new Date(dueDate),
+            recurringType,
+            reminderDays: parseInt(reminderDays),
+            notes,
+        });
+
+        await newReminder.save();
+        res.redirect('/dashboard'); // Redirect to reminders list after adding
+    } catch (error) {
+        console.error('Error adding reminder:', error);
+        res.render('add-reminder', { error: 'Failed to add reminder. Please try again.' });
+    }
+});
+router.get('/reminders', ensureAuthenticated, async (req, res) => {
+    try {
+        const userId = req.session.user.id;
+        const reminders = await Reminder.find({ userId }).sort({ dueDate: 1 });
+        
+        const now = new Date();
+        const overdueReminders = [];
+        const upcomingReminders = [];
+        const completedReminders = [];
+
+        reminders.forEach(reminder => {
+            const dueDate = new Date(reminder.dueDate);
+            const timeDiff = dueDate - now;
+            const daysUntilDue = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+            
+            if (reminder.isCompleted) {
+                completedReminders.push(reminder);
+            } else if (daysUntilDue < 0) {
+                overdueReminders.push({ ...reminder._doc, daysUntilDue });
+            } else {
+                upcomingReminders.push({ ...reminder._doc, daysUntilDue });
+            }
+        });
+
+        // Pass reminders explicitly along with other variables
+        res.render('reminders', {
+            reminders, // Add this line
+            overdueReminders,
+            upcomingReminders,
+            completedReminders,
+            error: null,
+            success: null
+        });
+    } catch (error) {
+        console.error('Error fetching reminders:', error);
+        res.render('reminders', {
+            reminders: [], // Ensure empty array is passed if an error occurs
+            overdueReminders: [],
+            upcomingReminders: [],
+            completedReminders: [],
+            error: 'Failed to load reminders',
+            success: null
         });
     }
 });
