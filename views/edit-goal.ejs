@@ -1,0 +1,83 @@
+<%- include('partials/header') %>
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-8 mx-auto">
+      <div class="card shadow">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+          <h3 class="mb-0">Edit Goal: <%= goal.name %></h3>
+          <a href="/goals/<%= goal._id %>" class="btn btn-light btn-sm">Back to Goal</a>
+        </div>
+        <div class="card-body">
+          <% if (typeof error !== 'undefined' && error && error.length > 0) { %>
+            <div class="alert alert-danger" role="alert">
+              <%= error %>
+            </div>
+          <% } %>
+          
+          <form action="/goals/<%= goal._id %>?_method=PUT" method="POST">
+            <div class="mb-3">
+              <label for="name" class="form-label">Goal Name</label>
+              <input type="text" class="form-control" id="name" name="name" value="<%= goal.name %>" required>
+            </div>
+
+            <div class="mb-3">
+              <label for="subject" class="form-label">Subject</label>
+              <input type="text" class="form-control" id="subject" name="subject" value="<%= goal.subject %>" required>
+            </div>
+
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label for="targetScore" class="form-label">Target Score (%)</label>
+                <input type="number" step="0.01" min="0" max="100" class="form-control" 
+                       id="targetScore" name="targetScore" value="<%= goal.targetScore %>" required>
+              </div>
+              <div class="col-md-6">
+                <label for="currentScore" class="form-label">Current Score (%)</label>
+                <input type="number" step="0.01" min="0" max="100" class="form-control" 
+                       id="currentScore" name="currentScore" value="<%= goal.currentScore %>" required>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="targetDate" class="form-label">Target Date</label>
+              <input type="date" class="form-control" id="targetDate" name="targetDate" 
+                     value="<%= goal.targetDate.toISOString().split('T')[0] %>" required>
+            </div>
+            <div class="mb-3">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="isCompleted" name="isCompleted" 
+                       <%= goal.isCompleted ? 'checked' : '' %>>
+                <label class="form-check-label" for="isCompleted">
+                  Mark as Achieved
+                </label>
+              </div>
+            </div>
+
+            <div class="d-grid gap-2">
+              <button type="submit" class="btn btn-primary">Update Goal</button>
+              <a href="/goals/<%= goal._id %>" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const targetDateInput = document.getElementById('targetDate');
+    
+    // Set minimum date to today if not completed
+    <% if (!goal.isCompleted) { %>
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth() + 1).padStart(2, '0');
+      const dd = String(today.getDate()).padStart(2, '0');
+      targetDateInput.min = `${yyyy}-${mm}-${dd}`;
+    <% } %>
+  });
+</script>
+
+<%- include('partials/footer') %>

@@ -16,6 +16,9 @@ mongoose.connect(dbUrl)
         console.error('MongoDB connection error:', error);
         process.exit(1); // Exit if DB connection fails
     });
+    
+    const methodOverride = require('method-override');
+app.use(methodOverride('_method')); // Add this before routes
 
 // Middleware to parse form data (MUST come before routes)
 app.use(bodyParser.urlencoded({ extended: true }));

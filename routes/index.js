@@ -3,7 +3,7 @@ const router = express.Router();
 const User = require('../models/User'); // Import User model
 const bcryptjs = require('bcryptjs'); // For password comparison
 const Mark = require('../models/Mark'); // Add this line
-
+const Goal = require('../models/Goal'); // Import the Goal model
 // Middleware to ensure authentication for protected routes
 function ensureAuthenticated(req, res, next) {
     if (req.session && req.session.user) {
@@ -11,7 +11,6 @@ function ensureAuthenticated(req, res, next) {
     }
     res.redirect('/login'); // Redirect to login page if not authenticated
 }
-
 // Route for the home page
 router.get('/', (req, res) => {
     res.render('home'); // Render home.ejs
@@ -91,18 +90,32 @@ function ensureAuthenticated(req, res, next) {
     }
     res.redirect('/login'); // Redirect to login page if not authenticated
 }
-// Route for dashboard (protected)
-router.get('/dashboard', ensureAuthenticated, (req, res) => {
-    // Retrieve user data from session
-    const { fullName, email, createdAt } = req.session.user;
-    res.render('dashboard', { 
-        user: { 
-            fullName, 
-            email, 
-            createdAt // Pass createdAt to the template
-        } 
-    });
+
+router.get('/dashboard', ensureAuthenticated, async (req, res) => {
+    try {
+        // Get user data from session
+        const { fullName, email, createdAt } = req.session.user;
+
+        // Fetch the most recent 3 goals from the database, sorted by creation date (newest first)
+        const goals = await Goal.find({ userId: req.session.user.id })
+            .sort({ createdAt: -1 }) // Sort by creation date in descending order
+            .limit(3); // Limit to 3 goals
+
+        // Render dashboard with user data and goals
+        res.render('dashboard', { 
+            user: { fullName, email, createdAt },
+            goals // Pass goals to the template
+        });
+    } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+        res.render('dashboard', { 
+            user: req.session.user,
+            goals: [] // Pass empty array if fetch fails
+        });
+    }
 });
+
+
 // Route to handle logout
 router.get('/logout', (req, res) => {
     req.session.destroy((err) => {
@@ -185,5 +198,228 @@ router.get('/marks', ensureAuthenticated, async (req, res) => {
         res.render('marks', { error: 'Failed to load academic records' });
     }
 });
+
+// Route to render the goals page
+router.get('/goals', ensureAuthenticated, async (req, res) => {
+    try {
+        const { status, subject, sort } = req.query;
+
+        // Build query based on filters
+        const query = {};
+        if (status === 'active') query.isCompleted = false;
+        if (status === 'completed') query.isCompleted = true;
+        if (subject) query.subject = subject;
+
+        // Sorting options
+        let sortOption = { targetDate: 1 }; // Default: deadline ascending
+        if (sort === 'deadline_desc') sortOption = { targetDate: -1 };
+        if (sort === 'progress_asc') sortOption = { progressPercentage: 1 };
+        if (sort === 'progress_desc') sortOption = { progressPercentage: -1 };
+
+        // Fetch goals from database
+        const goals = await Goal.find(query).sort(sortOption);
+
+        // Fetch distinct subjects for filtering
+        const subjects = await Goal.distinct('subject');
+
+        res.render('goals', {
+            goals,
+            subjects,
+            status: status || '',
+            subject: subject || '',
+            sort: sort || 'deadline_asc',
+            success: null,
+            error: null,
+        });
+    } catch (error) {
+        console.error('Error fetching goals:', error);
+        res.render('goals', { goals: [], subjects: [], error: 'Failed to load educational goals.' });
+    }
+});
+
+// GET route to display add goal form
+router.get('/goals/add', ensureAuthenticated, (req, res) => {
+    res.render('add-goal', { error: null });
+});
+
+// POST route to handle goal creation
+router.post('/goals/add', ensureAuthenticated, async (req, res) => {
+    try {
+        const { name, subject, targetScore, currentScore, startDate, targetDate } = req.body;
+        
+        // Calculate progress percentage
+        const progressPercentage = ((currentScore / targetScore) * 100) || 0;
+        
+        // Create new goal
+        const newGoal = new Goal({
+            userId: req.session.user.id,
+            name,
+            subject,
+            targetScore: parseFloat(targetScore),
+            currentScore: parseFloat(currentScore || 0),
+            startDate: new Date(startDate),
+            targetDate: new Date(targetDate),
+            progressPercentage,
+            isOnTrack: progressPercentage >= (targetScore * 0.8) // Example logic
+        });
+
+        await newGoal.save();
+        res.redirect('/goals');
+        
+    } catch (error) {
+        console.error('Error creating goal:', error);
+        res.render('add-goal', { 
+            error: 'Failed to create goal. Please check your inputs.' 
+        });
+    }
+});
+router.get('/goals/:id', ensureAuthenticated, async (req, res) => {
+    try {
+        const goalId = req.params.id;
+        console.log('Fetching Goal ID:', goalId); // Debug log
+
+        const goal = await Goal.findById(goalId);
+        console.log('Fetched Goal:', goal); // Debug log
+
+        if (!goal) {
+            return res.status(404).render('goal-detail', { 
+                error: 'Goal not found', 
+                success: null, 
+                goal: null 
+            });
+        }
+
+        const daysRemaining = Math.ceil((new Date(goal.targetDate) - new Date()) / (1000 * 60 * 60 * 24));
+        goal.daysRemaining = daysRemaining > 0 ? daysRemaining : 0;
+
+        res.render('goal-detail', { 
+            goal, 
+            error: null, 
+            success: null 
+        });
+    } catch (error) {
+        console.error('Error fetching goal details:', error);
+    }
+});
+
+// Update Progress
+router.put('/goals/:id/update', ensureAuthenticated, async (req, res) => {
+    try {
+        const goalId = req.params.id;
+        const { newScore, notes, updateDate } = req.body;
+
+        const goal = await Goal.findById(goalId);
+        if (!goal) {
+            return res.status(404).render('goal-detail', {
+                error: 'Goal not found',
+                success: null,
+                goal: null
+            });
+        }
+
+        // Convert scores to numbers
+        const parsedNewScore = parseFloat(newScore);
+        const scoreIncrease = parsedNewScore - goal.currentScore;
+
+        // Update goal
+        goal.currentScore = parsedNewScore;
+        goal.progressPercentage = (parsedNewScore / goal.targetScore) * 100;
+        goal.isCompleted = parsedNewScore >= goal.targetScore;
+
+        // Add progress update
+        goal.progressUpdates.push({
+            date: new Date(updateDate),
+            scoreIncrease: scoreIncrease,
+            notes: notes
+        });
+
+        await goal.save();
+
+        res.redirect(`/goals/${goalId}`);
+
+    } catch (error) {
+        console.error('Error updating progress:', error);
+        res.status(500).render('goal-detail', {
+            error: 'Failed to update progress. Please try again.',
+            success: null,
+            goal: req.goal
+        });
+    }
+});
+
+// Mark Goal as Complete
+router.put('/goals/:id/complete', ensureAuthenticated, async (req, res) => {
+    try {
+        const goal = await Goal.findById(req.params.id);
+        goal.isCompleted = true;
+        await goal.save();
+        res.redirect(`/goals/${req.params.id}`);
+    } catch (error) {
+        console.error('Error completing goal:', error);
+        res.status(500).redirect('/goals');
+    }
+});
+
+// Delete Goal
+router.delete('/goals/:id', ensureAuthenticated, async (req, res) => {
+    try {
+        await Goal.findByIdAndDelete(req.params.id);
+        res.redirect('/goals');
+    } catch (error) {
+        console.error('Error deleting goal:', error);
+        res.status(500).redirect('/goals');
+    }
+});
+// GET route to display edit form
+router.get('/goals/:id/edit', ensureAuthenticated, async (req, res) => {
+    try {
+        const goal = await Goal.findById(req.params.id);
+        if (!goal) {
+            return res.status(404).redirect('/goals');
+        }
+        res.render('edit-goal', { goal, error: null });
+    } catch (error) {
+        console.error('Error fetching goal for edit:', error);
+        res.status(500).redirect('/goals');
+    }
+});
+
+// PUT route to handle goal updates
+router.put('/goals/:id', ensureAuthenticated, async (req, res) => {
+    try {
+        const { name, subject, targetScore, currentScore, targetDate, priority, isCompleted } = req.body;
+        
+        const updatedGoal = await Goal.findByIdAndUpdate(
+            req.params.id,
+            {
+                name,
+                subject,
+                targetScore: parseFloat(targetScore),
+                currentScore: parseFloat(currentScore),
+                targetDate: new Date(targetDate),
+                priority,
+                isCompleted: Boolean(isCompleted),
+                progressPercentage: (currentScore / targetScore) * 100
+            },
+            { new: true }
+        );
+
+        if (!updatedGoal) {
+            return res.status(404).render('edit-goal', {
+                error: 'Goal not found',
+                goal: null
+            });
+        }
+
+        res.redirect(`/goals/${req.params.id}`);
+    } catch (error) {
+        console.error('Error updating goal:', error);
+        res.status(500).render('edit-goal', {
+            error: 'Failed to update goal. Please check your inputs.',
+            goal: req.body
+        });
+    }
+});
+
 
 module.exports = router;

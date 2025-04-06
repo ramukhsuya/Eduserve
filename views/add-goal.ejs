@@ -1,0 +1,128 @@
+<%- include('partials/header') %>
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-8 mx-auto">
+      <div class="card shadow">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+          <h3 class="mb-0">Create New Educational Goal</h3>
+          <a href="/goals" class="btn btn-light btn-sm">Back to Goals</a>
+        </div>
+        <div class="card-body">
+          <% if (typeof error !== 'undefined' && error && error.length > 0) { %>
+            <div class="alert alert-danger" role="alert">
+              <%= error %>
+            </div>
+          <% } %>
+          
+          <form action="/goals/add" method="POST">
+            <!-- Goal Details -->
+            <div class="mb-3">
+              <label for="name" class="form-label">Goal Name</label>
+              <input type="text" class="form-control" id="name" name="name" required>
+              <div class="form-text">E.g., "Achieve 90% in Advanced Calculus"</div>
+            </div>
+
+            <div class="mb-3">
+              <label for="subject" class="form-label">Subject</label>
+              <input type="text" class="form-control" id="subject" name="subject" required>
+              <div class="form-text">Subject/Course this goal applies to</div>
+            </div>
+
+            <!-- Scores -->
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label for="targetScore" class="form-label">Target Score (%)</label>
+                <input type="number" step="0.01" min="1" max="100" class="form-control" 
+                       id="targetScore" name="targetScore" required>
+              </div>
+              <div class="col-md-6">
+                <label for="currentScore" class="form-label">Current Score (%)</label>
+                <input type="number" step="0.01" min="0" max="100" class="form-control" 
+                       id="currentScore" name="currentScore" value="0">
+              </div>
+            </div>
+
+            <!-- Timeline -->
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label for="startDate" class="form-label">Start Date</label>
+                <input type="date" class="form-control" id="startDate" name="startDate" 
+                       value="<%= new Date().toISOString().split('T')[0] %>" required>
+              </div>
+              <div class="col-md-6">
+                <label for="targetDate" class="form-label">Target Date</label>
+                <input type="date" class="form-control" id="targetDate" name="targetDate" required>
+              </div>
+            </div>
+
+            <!-- Progress Calculator -->
+            <div id="progressSummary" class="alert alert-info d-none">
+              <h5>Study Plan Summary</h5>
+              <div id="summaryContent"></div>
+            </div>
+
+            <div class="d-grid gap-2">
+              <button type="submit" class="btn btn-primary">Create Goal</button>
+              <a href="/goals" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const targetScoreInput = document.getElementById('targetScore');
+  const currentScoreInput = document.getElementById('currentScore');
+  const startDateInput = document.getElementById('startDate');
+  const targetDateInput = document.getElementById('targetDate');
+  const progressSummary = document.getElementById('progressSummary');
+  const summaryContent = document.getElementById('summaryContent');
+
+  // Set date constraints
+  const today = new Date().toISOString().split('T')[0];
+  startDateInput.min = today;
+  targetDateInput.min = today;
+
+  function updateProgressSummary() {
+    const targetScore = parseFloat(targetScoreInput.value) || 0;
+    const currentScore = parseFloat(currentScoreInput.value) || 0;
+    const startDate = new Date(startDateInput.value);
+    const targetDate = new Date(targetDateInput.value);
+
+    if (targetScore > 0 && startDate && targetDate) {
+      const daysTotal = Math.ceil((targetDate - startDate) / (1000 * 60 * 60 * 24));
+      const pointsNeeded = targetScore - currentScore;
+      
+      if (daysTotal > 0 && pointsNeeded > 0) {
+        const dailyStudy = pointsNeeded / daysTotal;
+        const weeklyStudy = dailyStudy * 7;
+
+        summaryContent.innerHTML = `
+          <p>To achieve your target:</p>
+          <ul>
+            <li>Daily improvement needed: <strong>${dailyStudy.toFixed(2)}%</strong></li>
+            <li>Weekly improvement needed: <strong>${weeklyStudy.toFixed(2)}%</strong></li>
+          </ul>
+          <p>Total study days: <strong>${daysTotal}</strong></p>
+        `;
+        progressSummary.classList.remove('d-none');
+      } else {
+        progressSummary.classList.add('d-none');
+      }
+    } else {
+      progressSummary.classList.add('d-none');
+    }
+  }
+
+  // Add event listeners
+  [targetScoreInput, currentScoreInput, startDateInput, targetDateInput].forEach(input => {
+    input.addEventListener('input', updateProgressSummary);
+    input.addEventListener('change', updateProgressSummary);
+  });
+});
+</script>
+<%- include('partials/footer') %>
